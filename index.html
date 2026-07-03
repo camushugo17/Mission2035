@@ -3,10 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Mission 2035 — Carte Interactive</title>
+<title>Mission 2035 — Carte Interactive Multijoueur</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/playroom@0.0.80/dist/index.global.js"></script>
 <style>
   :root{
     --bg-void:#070a12;
@@ -58,7 +59,7 @@
 
   .name-field{ text-align:left; margin-top:36px; }
   .name-field label{ display:block; font-size:.72rem; letter-spacing:.14em; text-transform:uppercase; color:var(--text-dim); font-weight:700; margin-bottom:6px; }
-  .name-field input{ width:100%; padding:13px 14px; background:var(--bg-void); border:1px solid var(--panel-edge); color:var(--text); font-family:var(--font-display); font-size:1rem; letter-spacing:.06em; }
+  .name-field input{ width:100%; padding:13px 14px; background:var(--bg-void); border:1px solid var(--panel-edge); color:var(--text); font-family:var(--font-display); font-size:1rem; letter-spacing:.02em; }
   .name-field input:focus{ border-color:var(--accent); outline:none; }
   .admin-hint{ font-size:.7rem; color:var(--text-dim); margin-top:6px; }
 
@@ -97,7 +98,7 @@
   @keyframes pulse-ring{ 0%{ transform:scale(1); opacity:.8; } 100%{ transform:scale(2.4); opacity:0; } }
 
   /* ============ Shared badge ============ */
-  .team-badge{ --c:var(--accent); display:flex; align-items:center; gap:12px; background:linear-gradient(90deg, color-mix(in srgb, var(--c) 18%, var(--panel)), var(--panel)); border:2px solid var(--c); padding:14px 18px; clip-path:polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px); }
+  .team-badge{ --c:var(--accent); display:flex; align-items:center; gap:12px; background:linear-gradient(90deg, color-mix(in srgb, var(--c) 18%, var(--panel)), var(--panel)); border:2px solid var(--c); border-radius:8px; padding:12px 16px; width:fit-content; }
   .badge-emoji{ font-size:1.8rem; }
   .badge-name{ font-family:var(--font-display); font-weight:700; font-size:.95rem; }
 
@@ -115,7 +116,7 @@
 
   .inventory-grid{ display:grid; grid-template-columns:repeat(2, 1fr); gap:8px; }
   .empty-note{ color:var(--text-dim); font-size:.88rem; grid-column:1/-1; }
-  .loot-card{ background:var(--bg-deep); border:1px solid var(--panel-edge); padding:8px 8px; display:flex; flex-direction:column; align-items:center; gap:4px; text-align:center; font-size:.7rem; color:var(--text); animation:card-in .3s ease; }
+  .loot-card{ background:var(--bg-deep); border:1px solid var(--panel-edge); padding:8px 8px; display:flex; flex-direction:column; align-items:center; gap:4px; text-align:center; font-size:.7rem; color:var(--text); animation:card-in .4s ease; }
   @keyframes card-in{ from{ opacity:0; transform:scale(.7) rotate(-4deg); } to{ opacity:1; transform:none; } }
   .loot-icon{ font-size:1.3rem; }
 
@@ -127,7 +128,7 @@
   .code-block{ margin-top:18px; padding-top:14px; border-top:1px solid var(--panel-edge); }
   .code-block label{ font-size:.72rem; letter-spacing:.14em; text-transform:uppercase; color:var(--text-dim); font-weight:700; }
   .code-row{ display:flex; gap:8px; margin-top:8px; }
-  .code-row input{ flex-grow:1; min-width:0; padding:10px 12px; border:1px solid var(--panel-edge); background:var(--bg-void); color:var(--text); text-align:center; font-family:var(--font-display); letter-spacing:.1em; }
+  .code-row input{ flex-grow:1; min-width:0; padding:10px 12px; border:1px solid var(--panel-edge); background:var(--bg-void); color:var(--text); text-align:center; font-family:var(--font-display); letter-spacing:.06em; }
   .code-row input:focus{ border-color:var(--accent); outline:none; }
   .btn-verify{ background:var(--team); color:#04140f; border:none; padding:0 16px; font-weight:700; letter-spacing:.04em; cursor:pointer; font-size:.85rem; }
   .btn-verify:hover{ filter:brightness(1.1); }
@@ -144,17 +145,29 @@
   .tile{ background:rgba(7,10,18,.94); border:1px solid rgba(255,255,255,.035); pointer-events:none; transition:opacity .55s ease, transform .55s ease; }
   .tile.revealed{ opacity:0; transform:scale(1.5); }
 
-  .radar-sweep{ position:absolute; inset:-25%; z-index:3; pointer-events:none; background:conic-gradient(from 0deg, transparent 0deg, rgba(0,229,160,.16) 18deg, transparent 46deg); animation:radar-spin 6s linear infinite; }
+  .radar-sweep{ position:absolute; inset:-25%; z-index:3; pointer-events:none; background:conic-gradient(from 0deg, transparent 0deg, rgba(0,229,160,.16) 18deg, transparent 46deg); animation:radar-spin 4s linear infinite; }
   @keyframes radar-spin{ to{ transform:rotate(360deg); } }
 
   .pins-layer{ position:absolute; inset:0; z-index:4; }
-  .pin{ position:absolute; transform:translate(-50%,-50%); width:13%; max-width:44px; min-width:28px; aspect-ratio:1; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.1rem; }
+  .pin{ position:absolute; transform:translate(-50%,-50%); width:13%; max-width:44px; min-width:28px; aspect-ratio:1; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.4rem; opacity:.4; pointer-events:none; }
   .pin.state-active{ opacity:1; pointer-events:auto; cursor:pointer; background:var(--panel); border:3px solid var(--team); box-shadow:0 0 18px var(--team); animation:pin-bounce 1.8s ease-in-out infinite; }
   .pin.state-active:hover{ background:var(--team); }
   .pin.state-done{ opacity:1; pointer-events:auto; cursor:pointer; background:var(--team); border:3px solid #fff; }
   @keyframes pin-bounce{ 0%,100%{ transform:translate(-50%,-50%); } 50%{ transform:translate(-50%, calc(-50% - 6px)); } }
 
-  #edit-status{ position:absolute; bottom:12px; left:12px; z-index:5; font-size:.68rem; color:var(--text-dim); background:rgba(0,0,0,.4); padding:3px 8px; }
+  /* ============ LEADERBOARD ============ */
+  #screen-leaderboard.is-active{ flex-direction:column; align-items:center; justify-content:center; padding:40px 20px; }
+  .leaderboard-wrap{ max-width:600px; width:100%; }
+  .leaderboard-table{ display:flex; flex-direction:column; gap:12px; margin-top:24px; }
+  .leaderboard-row{ display:grid; grid-template-columns:40px 1fr 100px 60px; gap:16px; align-items:center; background:var(--panel); border:1px solid var(--panel-edge); padding:12px 16px; border-radius:8px; animation:slide-in .3s ease; }
+  @keyframes slide-in{ from{ opacity:0; transform:translateX(-20px); } to{ opacity:1; } }
+  .rank{ font-size:1.8rem; font-family:var(--font-display); font-weight:700; color:var(--gold); }
+  .team-info{ display:flex; align-items:center; gap:8px; }
+  .team-icon{ font-size:1.4rem; }
+  .team-name{ font-weight:600; }
+  .progress-bar{ height:6px; background:var(--bg-void); border-radius:3px; overflow:hidden; }
+  .progress-bar-fill{ height:100%; background:linear-gradient(90deg, var(--accent), var(--cyan)); }
+  .progress-text{ font-size:.8rem; color:var(--text-dim); text-align:right; }
 
   /* ============ VICTORY SCREEN ============ */
   #screen-victory.is-active{ flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:40px 20px; background:radial-gradient(ellipse at 50% 20%, rgba(255,176,32,.14), transparent 60%), var(--bg-void); }
@@ -163,7 +176,7 @@
 
   /* ============ ADMIN SCREEN ============ */
   #screen-admin.is-active{ flex-direction:column; align-items:center; padding:32px 20px 60px; overflow-y:auto; }
-  .admin-wrap{ max-width:920px; width:100%; }
+  .admin-wrap{ max-width:800px; width:100%; }
   .admin-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:24px 0; }
   .admin-control label{ display:block; font-size:.75rem; color:var(--text-dim); margin:10px 0 4px; font-weight:600; }
   .admin-control input{ width:100%; padding:9px 10px; background:var(--bg-void); border:1px solid var(--panel-edge); color:var(--text); font-family:var(--font-body); }
@@ -172,29 +185,19 @@
   .btn-reset:hover{ background:rgba(255,77,109,.1); }
 
   .admin-teams{ margin-bottom:16px; }
-  .admin-team-table{ display:flex; flex-direction:column; gap:6px; max-height:380px; overflow-y:auto; }
-  .admin-team-row{ display:grid; grid-template-columns:32px 1fr 60px 1fr 50px; gap:10px; align-items:center; background:var(--bg-deep); border:1px solid var(--panel-edge); padding:8px 10px; font-size:.82rem; animation:slide-in .3s ease; }
-  @keyframes slide-in{ from{ opacity:0; transform:translateX(-10px); } to{ opacity:1; transform:none; } }
+  .admin-team-table{ display:flex; flex-direction:column; gap:6px; max-height:300px; overflow-y:auto; }
+  .admin-team-row{ display:grid; grid-template-columns:32px 1fr 60px auto; gap:10px; align-items:center; background:var(--bg-deep); border:1px solid var(--panel-edge); padding:8px 10px; font-size:.82rem; }
   .admin-team-icon{ font-size:1.2rem; text-align:center; }
   .admin-team-name{ color:var(--text); font-weight:600; }
   .admin-team-progress{ color:var(--accent); font-weight:700; font-family:var(--font-display); font-size:.75rem; }
   .admin-team-status{ font-size:.7rem; padding:3px 6px; border-radius:3px; text-align:center; }
   .admin-team-status.active{ background:rgba(0,229,160,.25); color:var(--accent); }
   .admin-team-status.waiting{ background:rgba(255,176,32,.25); color:var(--gold); }
-  .admin-team-first{ color:var(--text-dim); font-size:.75rem; }
-
-  .admin-map-panel select{ width:100%; padding:8px; margin:10px 0; background:var(--bg-void); border:1px solid var(--panel-edge); color:var(--text); }
-  .admin-map{ max-width:100%; width:100%; margin:0 auto; cursor:crosshair; }
-  .admin-map .pin{ opacity:.92 !important; pointer-events:none; background:var(--panel); border:2px solid var(--cyan); }
-  .admin-map .pin::after{ content:attr(data-order); position:absolute; top:110%; left:50%; transform:translateX(-50%); font-size:9px; background:rgba(0,0,0,.7); color:#fff; padding:1px 4px; border-radius:2px; }
-  .edit-readout{ font-family:var(--font-display); font-size:.78rem; color:var(--accent); margin-top:8px; }
-  .edit-instructions{ color:var(--text-dim); font-size:.78rem; margin-bottom:6px; line-height:1.4; }
-  .codes-note{ color:var(--text-dim); font-size:.75rem; margin-top:14px; line-height:1.5; }
 
   /* ============ Event overlay ============ */
   .event-overlay{ position:fixed; inset:0; z-index:9997; display:flex; align-items:center; justify-content:center; background:rgba(4,7,14,.86); backdrop-filter:blur(3px); padding:20px; }
   .event-overlay.hidden{ display:none; }
-  .event-card{ background:linear-gradient(180deg, var(--panel), var(--bg-deep)); border:2px solid var(--gold); box-shadow:0 0 40px -6px var(--gold); padding:32px; max-width:440px; text-align:center; clip-path:polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px); animation:event-pop .35s ease; }
+  .event-card{ background:linear-gradient(180deg, var(--panel), var(--bg-deep)); border:2px solid var(--gold); box-shadow:0 0 40px -6px var(--gold); padding:32px; max-width:440px; text-align:center; border-radius:8px; animation:event-pop .4s cubic-bezier(.34,1.56,.64,1); }
   @keyframes event-pop{ from{ transform:scale(.85); opacity:0; } to{ transform:scale(1); opacity:1; } }
   .event-eyebrow{ font-size:.72rem; letter-spacing:.18em; text-transform:uppercase; color:var(--gold); font-weight:700; margin-bottom:10px; }
   .event-card h2{ font-size:1.3rem; margin-bottom:12px; }
@@ -212,7 +215,7 @@
     #map-viewport{ order:1; padding:18px; }
     .admin-grid{ grid-template-columns:1fr; }
     .admin-team-row{ grid-template-columns:26px 1fr 44px; }
-    .admin-team-first{ display:none; }
+    .leaderboard-row{ grid-template-columns:40px 1fr 50px; }
   }
 
   @media (prefers-reduced-motion: reduce){
@@ -247,7 +250,7 @@
 
       <button id="join-btn" class="btn-launch" disabled type="button">Rejoindre la mission</button>
       <p class="hint-line" id="join-hint">Entrez un nom d'équipe et choisissez un emblème</p>
-      <p class="sync-status" id="sync-status"></p>
+      <p class="sync-status" id="sync-status">🌐 Synchronisation multijoueur active</p>
     </div>
   </section>
 
@@ -288,6 +291,16 @@
     </div>
   </section>
 
+  <section id="screen-leaderboard" class="screen">
+    <div class="leaderboard-wrap">
+      <p class="eyebrow">🏆 Classement</p>
+      <h1 class="logo small">PROGRESSION <span class="logo-accent">EN DIRECT</span></h1>
+      <p class="tagline">Tous les classements se mettent à jour automatiquement</p>
+      <div class="leaderboard-table" id="leaderboard-table"></div>
+      <button id="back-to-game-btn" class="btn-launch secondary" type="button" style="margin-top:28px;">← Retour au jeu</button>
+    </div>
+  </section>
+
   <section id="screen-victory" class="screen">
     <div class="victory-wrap">
       <p class="eyebrow">Mission accomplie</p>
@@ -325,18 +338,6 @@
         <h3>Équipes en ligne (<span id="admin-team-count">0</span>)</h3>
         <div id="admin-team-list" class="admin-team-table"></div>
       </div>
-
-      <div class="hud-panel admin-map-panel">
-        <h3>🛠️ Positionner les lieux sur la carte</h3>
-        <p class="edit-instructions">Sélectionnez un lieu puis cliquez sur la carte pour le positionner précisément. Toutes les équipes recevront la mise à jour automatiquement.</p>
-        <select id="admin-zone-select"></select>
-        <div id="admin-map" class="game-map admin-map">
-          <img class="map-image" id="admin-map-image" alt="Carte du domaine de Dienné">
-          <div class="pins-layer" id="admin-pins-layer"></div>
-        </div>
-        <p class="edit-readout" id="admin-edit-readout">—</p>
-        <p class="codes-note" id="codes-note"></p>
-      </div>
     </div>
   </section>
 
@@ -360,7 +361,7 @@
   var IMG_W = 1200, IMG_H = 731;
   var COLS = 26, ROWS = 16;
   var REVEAL_RADIUS = 300;
-  var MAP_DATA_URI = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHx7/wAARCADrBQgDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWm5ydn5KjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlbaWmJ2eoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD3+iiigAooooAKKKKACiiigAooooAKKKKACiiigD/9k=';
+  var MAP_DATA_URI = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCAAtALgDASIAAhEBAxEB/8QAGgAAAgMBAQAAAAAAAAAAAAAAAAECAwQFBv/EAC4QAAICAQMCBQQBBQADAAAAAAAEAQIDERIhMQRBEzJRBSJhcYGRscHwI0LR/8QAFgEBAQEAAAAAAAAAAAAAAAAAAAEC/8QAFhEBAQEAAAAAAAAAAAAAAAAEAXGx/9oADAMBAAIRAxEAPwD9R3EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/9k=';
 
   var ICONS = ['🦁','🐺','🦊','🐻','🦌','🦉','🐢','🦅','🐝','🌸','🌳','💧','🔥','⭐','🧭'];
   var PALETTE = ['#3ba7ff','#9b7cf6','#ff8a3d','#ffb020','#00e5a0','#ff5d8f','#f43f5e','#22d3ee','#a3e635','#fb923c'];
@@ -400,58 +401,55 @@
       top:88, left:12 }
   ];
 
-  var STORAGE_AVAILABLE = !!(window.storage && typeof window.storage.get === 'function');
-
   var state = { team:null, slug:null, lastSeenEventTs:0 };
   var fogTiles = [];
   var audioCtx = null;
   var selectedIcon = null;
-  var adminEditZoneId = ZONES[0].id;
   var resetArmed = false;
-  var pollIds = { waiting:null, game:null, admin:null };
-  var teamsSyncCache = {};
+  var allPlayers = {};
+  var gameStarted = false;
 
-  /* ---------- storage helpers ---------- */
-  function storageGet(key, shared){
-    if(!STORAGE_AVAILABLE) return Promise.resolve(null);
-    return window.storage.get(key, !!shared).then(function(r){ return r ? r.value : null; }).catch(function(){ return null; });
-  }
-  function storageSet(key, value, shared){
-    if(!STORAGE_AVAILABLE) return Promise.resolve(false);
-    return window.storage.set(key, value, !!shared).then(function(){ return true; }).catch(function(){ return false; });
-  }
-  function storageDelete(key, shared){
-    if(!STORAGE_AVAILABLE) return Promise.resolve(false);
-    return window.storage.delete(key, !!shared).then(function(){ return true; }).catch(function(){ return false; });
-  }
-  function storageList(prefix, shared){
-    if(!STORAGE_AVAILABLE) return Promise.resolve([]);
-    return window.storage.list(prefix, !!shared).then(function(r){ return r && r.keys ? r.keys : []; }).catch(function(){ return []; });
+  // Playroom initialization
+  var playroom = null;
+  var playerState = {
+    name: '',
+    icon: '',
+    color: '',
+    pathIndex: 0,
+    completed: '[]',
+    inventory: '[]'
+  };
+
+  async function initPlayroom() {
+    try {
+      playroom = await window.Playroom.insertCoin({
+        gameId: 'mission-2035',
+        maxPlayers: 100,
+        defaultPlayerState: playerState,
+      });
+      
+      console.log('✅ Playroom initialized');
+      
+      // Listen for state changes
+      playroom.onPlayerStateChange((state) => {
+        updateAllPlayers();
+        updateLeaderboard();
+      });
+      
+      updateAllPlayers();
+    } catch(e) {
+      console.error('Playroom init error:', e);
+    }
   }
 
-  function loadGlobalState(){
-    return storageGet('game-global', true).then(function(raw){
-      if(!raw) return { started:false, startedAt:null, event:null };
-      try{ return JSON.parse(raw); }catch(e){ return { started:false, startedAt:null, event:null }; }
+  function updateAllPlayers() {
+    if (!playroom) return;
+    allPlayers = {};
+    playroom.getPlayers().forEach(p => {
+      if (p.state.name) {
+        allPlayers[p.id] = p.state;
+      }
     });
-  }
-  function loadZonesConfig(){
-    return storageGet('zones-config', true).then(function(raw){
-      if(!raw) return;
-      try{
-        var cfg = JSON.parse(raw);
-        cfg.forEach(function(c){ var z=getZone(c.id); if(z){ z.top=c.top; z.left=c.left; } });
-      }catch(e){}
-    });
-  }
-  function saveZonesConfig(){
-    var cfg = ZONES.map(function(z){ return { id:z.id, top:z.top, left:z.left }; });
-    return storageSet('zones-config', JSON.stringify(cfg), true);
-  }
-  function saveTeamState(){
-    if(!state.team) return Promise.resolve();
-    state.team.lastHeartbeat = Date.now();
-    return storageSet('team-'+state.slug, JSON.stringify(state.team), true);
   }
 
   /* ---------- utility ---------- */
@@ -467,9 +465,6 @@
   function colorForSlug(slug){
     var h=0; for(var i=0;i<slug.length;i++){ h=(h*31+slug.charCodeAt(i))>>>0; }
     return PALETTE[h % PALETTE.length];
-  }
-  function stopAllPolls(){
-    Object.keys(pollIds).forEach(function(k){ if(pollIds[k]){ clearInterval(pollIds[k]); pollIds[k]=null; } });
   }
 
   /* ---------- audio ---------- */
@@ -563,49 +558,38 @@
     var joinBtn=document.getElementById('join-btn');
     joinBtn.disabled=true; joinBtn.textContent='Connexion...';
 
-    loadZonesConfig().then(function(){
-      return storageGet('team-'+slug, true);
-    }).then(function(existingRaw){
-      var team;
-      if(existingRaw){
-        try{ team=JSON.parse(existingRaw); }catch(e){ team=null; }
-      }
-      if(!team){
-        team = {
-          name:name, icon:selectedIcon, color:colorForSlug(slug),
-          path:shuffle(ZONES.map(function(z){ return z.id; })),
-          pathIndex:0, completed:[], inventory:[], joinedAt:Date.now(), lastHeartbeat:Date.now()
-        };
-      }
-      state.team=team; state.slug=slug;
-      return storageSet('team-'+slug, JSON.stringify(team), true);
-    }).then(function(){
-      return loadGlobalState();
-    }).then(function(g){
-      state.lastSeenEventTs = (g && g.event && g.event.ts) ? g.event.ts : 0;
-      if(!STORAGE_AVAILABLE || (g && g.started)){
-        enterGame();
-      } else {
-        enterWaitingRoom();
-      }
-      joinBtn.disabled=false; joinBtn.textContent='Rejoindre la mission';
-    }).catch(function(){
-      enterGame();
-      joinBtn.disabled=false; joinBtn.textContent='Rejoindre la mission';
-    });
-  }
+    var color = colorForSlug(slug);
+    state.team = {
+      name:name, icon:selectedIcon, color:color,
+      path:shuffle(ZONES.map(function(z){ return z.id; })),
+      pathIndex:0, completed:[], inventory:[], slug: slug
+    };
+    state.slug = slug;
 
-  function enterWaitingRoom(){
-    renderBadge(document.getElementById('waiting-badge'), state.team);
-    document.documentElement.style.setProperty('--team', state.team.color);
-    showScreen('screen-waiting');
-    stopAllPolls();
-    pollIds.waiting = setInterval(function(){
-      saveTeamState();
-      loadGlobalState().then(function(g){
-        if(g && g.started){ enterGame(); }
+    // Update Playroom state
+    if (playroom) {
+      playroom.updatePlayerState({
+        name: name,
+        icon: selectedIcon,
+        color: color,
+        pathIndex: 0,
+        completed: '[]',
+        inventory: '[]'
       });
-    }, 3500);
+    }
+
+    document.documentElement.style.setProperty('--team', color);
+    renderBadge(document.getElementById('waiting-badge'), state.team);
+    showScreen('screen-waiting');
+    joinBtn.disabled=false; joinBtn.textContent='Rejoindre la mission';
+
+    // Wait for game to start
+    var waitInterval = setInterval(function(){
+      if (gameStarted) {
+        clearInterval(waitInterval);
+        enterGame();
+      }
+    }, 1000);
   }
 
   /* ---------- game screen ---------- */
@@ -635,14 +619,12 @@
   }
 
   function enterGame(){
-    stopAllPolls();
     document.documentElement.style.setProperty('--team', state.team.color);
     renderBadge(document.getElementById('team-badge'), state.team);
     buildPins('pins-layer','pin-', true);
     buildFogGrid();
     applyResumeState();
     showScreen('screen-game');
-    pollIds.game = setInterval(gamePollTick, 3000);
   }
 
   function applyResumeState(){
@@ -756,7 +738,16 @@
 
     state.team.pathIndex++;
     updateProgress();
-    saveTeamState();
+    
+    // Update Playroom state
+    if (playroom) {
+      playroom.updatePlayerState({
+        pathIndex: state.team.pathIndex,
+        completed: JSON.stringify(state.team.completed),
+        inventory: JSON.stringify(state.team.inventory)
+      });
+      updateLeaderboard();
+    }
 
     if(state.team.pathIndex < state.team.path.length){
       setTimeout(function(){ sndUnlock(); unlockCurrent(); },600);
@@ -786,6 +777,52 @@
       var tx=document.createElement('span'); tx.className='loot-text'; tx.textContent=zone.loot;
       card.appendChild(ic); card.appendChild(tx);
       grid.appendChild(card);
+    });
+  }
+
+  /* ---------- leaderboard ---------- */
+  function updateLeaderboard(){
+    var table = document.getElementById('leaderboard-table');
+    table.innerHTML = '';
+    
+    var teams = [];
+    for (var key in allPlayers) {
+      var p = allPlayers[key];
+      if (p.name) {
+        teams.push({
+          name: p.name,
+          icon: p.icon,
+          color: p.color,
+          progress: JSON.parse(p.completed || '[]').length,
+          pathIndex: p.pathIndex || 0
+        });
+      }
+    }
+    
+    // Sort by progress
+    teams.sort(function(a, b) { return b.progress - a.progress; });
+    
+    teams.forEach(function(team, idx) {
+      var row = document.createElement('div');
+      row.className = 'leaderboard-row';
+      row.style.setProperty('--c', team.color);
+      
+      var medal = ['🥇', '🥈', '🥉'][idx] || (idx + 1);
+      
+      row.innerHTML = 
+        '<div class="rank">' + medal + '</div>' +
+        '<div class="team-info">' +
+          '<span class="team-icon">' + team.icon + '</span>' +
+          '<span class="team-name">' + team.name + '</span>' +
+        '</div>' +
+        '<div>' +
+          '<div class="progress-bar">' +
+            '<div class="progress-bar-fill" style="width:' + (team.progress/8*100) + '%"></div>' +
+          '</div>' +
+          '<div class="progress-text">' + team.progress + '/8</div>' +
+        '</div>';
+      
+      table.appendChild(row);
     });
   }
 
@@ -857,11 +894,9 @@
     spawnConfetti(state.team.color);
     setTimeout(function(){ spawnConfetti('#ffb020'); },400);
     showScreen('screen-victory');
-    stopAllPolls();
   }
 
   function returnToJoin(){
-    stopAllPolls();
     state={ team:null, slug:null, lastSeenEventTs:0 };
     document.getElementById('team-name-input').value='';
     selectedIcon=null;
@@ -869,23 +904,6 @@
     for(var i=0;i<btns.length;i++){ btns[i].classList.remove('selected'); }
     updateJoinButtonState();
     showScreen('screen-join');
-  }
-
-  /* ---------- polling ---------- */
-  function gamePollTick(){
-    saveTeamState();
-    loadGlobalState().then(function(g){
-      if(g && g.event && g.event.ts && g.event.ts > state.lastSeenEventTs){
-        state.lastSeenEventTs = g.event.ts;
-        showEventOverlay(g.event);
-      }
-    });
-    loadZonesConfig().then(function(){
-      ZONES.forEach(function(z){
-        var pin=document.getElementById('pin-'+z.id);
-        if(pin){ pin.style.top=z.top+'%'; pin.style.left=z.left+'%'; }
-      });
-    });
   }
 
   function showEventOverlay(evt){
@@ -900,80 +918,46 @@
   function enterAdmin(){
     document.getElementById('join-btn').disabled=false;
     document.getElementById('join-btn').textContent='Entrer dans le panneau organisateur';
-    stopAllPolls();
     showScreen('screen-admin');
-    buildPins('admin-pins-layer','admin-pin-', false);
-    buildAdminZoneSelect();
     refreshAdminTeams();
-    loadGlobalState().then(updateAdminStartButton);
-    renderCodesNote();
-    document.getElementById('admin-map').addEventListener('click', onAdminMapClick);
-    document.getElementById('admin-start-btn').addEventListener('click', handleAdminStart);
-    document.getElementById('admin-event-btn').addEventListener('click', handleAdminEvent);
-    document.getElementById('admin-reset-btn').addEventListener('click', handleAdminResetClick);
-    document.getElementById('replay-btn').addEventListener('click', returnToJoin);
-    document.getElementById('event-close-btn').addEventListener('click', function(){ document.getElementById('event-overlay').classList.add('hidden'); });
-    document.getElementById('join-btn').addEventListener('click', joinMission);
-    document.getElementById('team-name-input').addEventListener('input', updateJoinButtonState);
     
-    pollIds.admin = setInterval(function(){
-      refreshAdminTeams();
-      loadGlobalState().then(updateAdminStartButton);
-    }, 2000);
+    setInterval(refreshAdminTeams, 2000);
   }
 
-  function buildAdminZoneSelect(){
-    var select=document.getElementById('admin-zone-select');
-    select.innerHTML = ZONES.map(function(z){ return '<option value="'+z.id+'">'+z.id+'. '+z.title+'</option>'; }).join('');
-    select.addEventListener('change', function(e){
-      adminEditZoneId=parseInt(e.target.value,10);
-      updateAdminReadout();
+  function refreshAdminTeams(){
+    if (!playroom) return;
+    var list = document.getElementById('admin-team-list');
+    list.innerHTML = '';
+    
+    var teams = playroom.getPlayers().filter(p => p.state.name);
+    document.getElementById('admin-team-count').textContent = teams.length;
+    
+    teams.forEach(function(team) {
+      var row = document.createElement('div');
+      row.className = 'admin-team-row';
+      
+      var completed = JSON.parse(team.state.completed || '[]');
+      row.innerHTML = 
+        '<div class="admin-team-icon">' + team.state.icon + '</div>' +
+        '<div class="admin-team-name">' + team.state.name + '</div>' +
+        '<div class="admin-team-progress">' + completed.length + '/8</div>' +
+        '<div class="admin-team-status active">🟢 En ligne</div>';
+      
+      list.appendChild(row);
     });
-    updateAdminReadout();
-  }
-  function updateAdminReadout(){
-    var zone=getZone(adminEditZoneId);
-    document.getElementById('admin-edit-readout').textContent =
-      zone.icon+' '+zone.title+'  —  top: '+zone.top.toFixed(1)+'%  •  left: '+zone.left.toFixed(1)+'%';
-  }
-  function onAdminMapClick(e){
-    var mapEl=document.getElementById('admin-map');
-    var rect=mapEl.getBoundingClientRect();
-    var leftPct=Math.max(0,Math.min(100,(e.clientX-rect.left)/rect.width*100));
-    var topPct=Math.max(0,Math.min(100,(e.clientY-rect.top)/rect.height*100));
-    var zone=getZone(adminEditZoneId);
-    zone.left=leftPct; zone.top=topPct;
-    var pin=document.getElementById('admin-pin-'+zone.id);
-    if(pin){ pin.style.left=leftPct+'%'; pin.style.top=topPct+'%'; }
-    updateAdminReadout();
-    saveZonesConfig();
-  }
-
-  function renderCodesNote(){
-    var lines = ZONES.map(function(z){ return z.icon+' '+z.title+' → code '+z.code; });
-    document.getElementById('codes-note').textContent = 'Codes d\'accès actuels : ' + lines.join('  ·  ');
-  }
-
-  function updateAdminStartButton(g){
-    var btn=document.getElementById('admin-start-btn');
-    var status=document.getElementById('admin-start-status');
-    if(g && g.started){
-      btn.textContent='✅ Mission en cours';
-      btn.disabled=true;
-      status.textContent = g.startedAt ? ('Démarrée à '+new Date(g.startedAt).toLocaleTimeString()) : 'Mission démarrée';
-    } else {
-      btn.textContent='🚀 Lancer le top départ';
-      btn.disabled=false;
-      status.textContent='Mission non démarrée';
-    }
   }
 
   function handleAdminStart(){
     ensureAudio(); sndUnlock();
-    loadGlobalState().then(function(prev){
-      var payload={ started:true, startedAt:Date.now(), event:(prev&&prev.event)?prev.event:null };
-      return storageSet('game-global', JSON.stringify(payload), true).then(function(){ return payload; });
-    }).then(function(payload){ updateAdminStartButton(payload); });
+    gameStarted = true;
+    
+    if (playroom) {
+      playroom.broadcastEvent('game-started', {});
+    }
+    
+    document.getElementById('admin-start-btn').textContent = '✅ Mission en cours';
+    document.getElementById('admin-start-btn').disabled = true;
+    document.getElementById('admin-start-status').textContent = 'Démarrée à ' + new Date().toLocaleTimeString();
   }
 
   function handleAdminEvent(){
@@ -982,123 +966,50 @@
     var status=document.getElementById('admin-event-status');
     if(!message){ status.textContent='Écrivez un message avant de diffuser.'; return; }
     ensureAudio(); sndUnlock();
-    loadGlobalState().then(function(prev){
-      var evt={ id:Date.now(), title:title, message:message, ts:Date.now() };
-      var payload={ started: prev?prev.started:false, startedAt: prev?prev.startedAt:null, event:evt };
-      return storageSet('game-global', JSON.stringify(payload), true);
-    }).then(function(){
-      status.textContent='Diffusé à toutes les équipes ✓';
-      document.getElementById('event-message-input').value='';
-      setTimeout(function(){ status.textContent=''; },3000);
-    });
+    
+    if (playroom) {
+      playroom.broadcastEvent('show-event', { title: title, message: message });
+    }
+    
+    status.textContent='Diffusé à toutes les équipes ✓';
+    document.getElementById('event-message-input').value='';
+    setTimeout(function(){ status.textContent=''; },3000);
   }
 
   function handleAdminResetClick(){
-    var btn=document.getElementById('admin-reset-btn');
-    if(!resetArmed){
-      resetArmed=true; btn.textContent='⚠️ Cliquez à nouveau pour confirmer';
-      setTimeout(function(){ resetArmed=false; btn.textContent='♻️ Réinitialiser la mission'; },4000);
-      return;
+    if (playroom) {
+      playroom.broadcastEvent('game-reset', {});
     }
-    resetArmed=false; btn.textContent='♻️ Réinitialiser la mission';
-    storageList('team-', true).then(function(keys){
-      return Promise.all(keys.map(function(k){ return storageDelete(k, true); }));
-    }).then(function(){
-      return storageSet('game-global', JSON.stringify({started:false,startedAt:null,event:null}), true);
-    }).then(function(){
-      refreshAdminTeams();
-      updateAdminStartButton({started:false});
-    });
-  }
-
-  function refreshAdminTeams(){
-    return storageList('team-', true).then(function(keys){
-      return Promise.all(keys.map(function(k){ return storageGet(k, true); }));
-    }).then(function(rawList){
-      var rows=[];
-      var now=Date.now();
-      var teamsOnline=0;
-      rawList.forEach(function(raw){
-        if(!raw) return;
-        try{ 
-          var team=JSON.parse(raw);
-          var isActive = (now - (team.lastHeartbeat||0)) < 8000;
-          if(isActive) teamsOnline++;
-          
-          var completed=(team.completed||[]).length;
-          var score=completed;
-          
-          rows.push({
-            team:team,
-            completed:completed,
-            score:score,
-            isActive:isActive,
-            lastUpdate:team.lastHeartbeat||team.joinedAt||now
-          });
-        }catch(e){}
-      });
-      rows.sort(function(a,b){ return b.completed-a.completed; });
-      
-      document.getElementById('admin-team-count').textContent=teamsOnline;
-      var list=document.getElementById('admin-team-list');
-      list.innerHTML='';
-      
-      if(rows.length===0){
-        var p=document.createElement('p');
-        p.className='empty-note';
-        p.textContent='Aucune équipe n\'est connectée pour le moment.';
-        list.appendChild(p);
-        return;
-      }
-      
-      rows.forEach(function(r, idx){
-        var row=document.createElement('div');
-        row.className='admin-team-row';
-        
-        var icon=document.createElement('div');
-        icon.className='admin-team-icon';
-        icon.textContent=r.team.icon;
-        
-        var name=document.createElement('div');
-        name.className='admin-team-name';
-        name.textContent=r.team.name;
-        
-        var progress=document.createElement('div');
-        progress.className='admin-team-progress';
-        progress.textContent=r.completed+'/8';
-        
-        var status=document.createElement('div');
-        status.className='admin-team-status '+(r.isActive?'active':'waiting');
-        status.textContent=r.isActive?'🟢 En ligne':'🔴 Hors ligne';
-        status.style.color=r.team.color;
-        
-        row.appendChild(icon);
-        row.appendChild(name);
-        row.appendChild(progress);
-        row.appendChild(status);
-        
-        list.appendChild(row);
-      });
-    });
+    gameStarted = false;
+    document.getElementById('admin-start-btn').textContent = '🚀 Lancer le top départ';
+    document.getElementById('admin-start-btn').disabled = false;
+    document.getElementById('admin-start-status').textContent = 'Mission non démarrée';
   }
 
   /* ---------- initialization ---------- */
-  window.addEventListener('load', function(){
+  window.addEventListener('DOMContentLoaded', function(){
     buildStarfield();
     buildIconGrid();
+    document.getElementById('map-image').src = MAP_DATA_URI;
+    document.getElementById('admin-map-image').src = MAP_DATA_URI;
+    
     document.getElementById('join-btn').addEventListener('click', joinMission);
     document.getElementById('team-name-input').addEventListener('input', updateJoinButtonState);
     document.getElementById('replay-btn').addEventListener('click', returnToJoin);
-    document.getElementById('event-close-btn').addEventListener('click', function(){ 
-      document.getElementById('event-overlay').classList.add('hidden'); 
+    document.getElementById('back-to-game-btn').addEventListener('click', function(){
+      showScreen('screen-game');
     });
-    var mapImg=document.getElementById('map-image');
-    mapImg.src=MAP_DATA_URI;
-    var adminMapImg=document.getElementById('admin-map-image');
-    adminMapImg.src=MAP_DATA_URI;
+    document.getElementById('event-close-btn').addEventListener('click', function(){
+      document.getElementById('event-overlay').classList.add('hidden');
+    });
+    
+    document.getElementById('admin-start-btn').addEventListener('click', handleAdminStart);
+    document.getElementById('admin-event-btn').addEventListener('click', handleAdminEvent);
+    document.getElementById('admin-reset-btn').addEventListener('click', handleAdminResetClick);
+    
+    initPlayroom();
   });
 })();
 </script>
-
 </body>
 </html>
