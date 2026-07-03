@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Mission 2035 — Carte Interactive Multijoueur</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/playroom@0.0.80/dist/index.global.js"></script>
+<style>
+  :root{
+    --bg-void:#070a12;
+    --bg-deep:#0b1120;
+    --panel:#111a2c;
+    --panel-edge:#233150;
+    --text:#eaf1fb;
+    --text-dim:#8291b3;
+    --accent:#00e5a0;
+    --cyan:#3ba7ff;
+    --gold:#ffb020;
+    --danger:#ff4d6d;
+    --team: var(--accent);
+    --font-display:'Orbitron', sans-serif;
+    --font-body:'Rajdhani', sans-serif;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; min-height:100vh; background:var(--bg-void); color:var(--text); font-family:var(--font-body); font-size:16px; -webkit-font-smoothing:antialiased; }
+  h1,h2,h3,h4{ font-family:var(--font-display); margin:0; }
+  p{ margin:0; }
+  button{ font-family:var(--font-body); }
+  ::selection{ background:var(--accent); color:#04140f; }
+  :focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+
+  .scanlines{
+    position:fixed; inset:0; z-index:9999; pointer-events:none;
+    background:repeating-linear-gradient(to bottom, rgba(255,255,255,0.025) 0px, rgba(255,255,255,0.025) 1px, transparent 1px, transparent 3px);
+    mix-blend-mode:overlay; opacity:.6;
+  }
+
+  .screen{ display:none; min-height:100vh; width:100%; }
+  .screen.is-active{ display:flex; }
+
+  /* ============ JOIN SCREEN ============ */
+  #screen-join.is-active{
+    flex-direction:column; align-items:center; justify-content:center; position:relative; overflow:hidden; padding:40px 20px;
+    background:radial-gradient(ellipse at 50% -10%, rgba(0,229,160,0.14), transparent 55%), radial-gradient(ellipse at 90% 110%, rgba(59,167,255,0.10), transparent 50%), var(--bg-void);
+  }
+  .starfield{ position:absolute; inset:0; z-index:0; }
+  .star{ position:absolute; background:#fff; border-radius:50%; animation:twinkle 4s ease-in-out infinite; }
+  @keyframes twinkle{ 0%,100%{ opacity:.15; } 50%{ opacity:.9; } }
+
+  .title-wrap{ position:relative; z-index:1; max-width:520px; width:100%; text-align:center; }
+  .eyebrow{ font-family:var(--font-body); font-weight:600; letter-spacing:.28em; text-transform:uppercase; font-size:.72rem; color:var(--cyan); margin-bottom:14px; }
+  .logo{ font-size:clamp(2.2rem, 7vw, 4rem); font-weight:900; letter-spacing:.04em; line-height:1; color:var(--text); text-shadow:0 0 26px rgba(0,229,160,.35); }
+  .logo.small{ font-size:clamp(1.6rem, 5vw, 2.6rem); }
+  .logo-accent{ color:var(--accent); }
+  .tagline{ margin-top:16px; color:var(--text-dim); font-size:1rem; font-weight:500; }
+
+  .name-field{ text-align:left; margin-top:36px; }
+  .name-field label{ display:block; font-size:.72rem; letter-spacing:.14em; text-transform:uppercase; color:var(--text-dim); font-weight:700; margin-bottom:6px; }
+  .name-field input{ width:100%; padding:13px 14px; background:var(--bg-void); border:1px solid var(--panel-edge); color:var(--text); font-family:var(--font-display); font-size:1rem; letter-spacing:.02em; }
+  .name-field input:focus{ border-color:var(--accent); outline:none; }
+  .admin-hint{ font-size:.7rem; color:var(--text-dim); margin-top:6px; }
+
+  #icon-section{ margin-top:22px; text-align:left; }
+  .pick-label{ font-size:.72rem; letter-spacing:.14em; text-transform:uppercase; color:var(--text-dim); font-weight:700; margin-bottom:10px; display:block; }
+  .icon-grid{ display:grid; grid-template-columns:repeat(5, 1fr); gap:8px; }
+  .icon-btn{
+    aspect-ratio:1; font-size:1.4rem; background:var(--panel); border:2px solid var(--panel-edge); color:var(--text);
+    cursor:pointer; display:flex; align-items:center; justify-content:center;
+    clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);
+    transition:transform .15s ease, border-color .15s ease;
+  }
+  .icon-btn:hover{ transform:translateY(-2px); border-color:var(--cyan); }
+  .icon-btn.selected{ border-color:var(--accent); box-shadow:0 0 14px -2px var(--accent); background:linear-gradient(180deg, rgba(0,229,160,.18), var(--panel)); }
+
+  .btn-launch{
+    margin-top:30px; width:100%; font-family:var(--font-display); font-weight:700; letter-spacing:.06em; font-size:1rem; text-transform:uppercase; color:#04140f;
+    background:linear-gradient(180deg, var(--accent), #00b382); border:none; padding:16px 20px;
+    clip-path:polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+    cursor:pointer; box-shadow:0 8px 24px -8px rgba(0,229,160,.6); transition:transform .15s ease, filter .15s ease, opacity .15s ease;
+  }
+  .btn-launch:disabled{ opacity:.35; cursor:not-allowed; filter:grayscale(.4); }
+  .btn-launch:not(:disabled):hover{ transform:translateY(-2px); filter:brightness(1.08); }
+  .btn-launch.secondary{ background:linear-gradient(180deg, var(--cyan), #1e6fd6); box-shadow:0 8px 24px -8px rgba(59,167,255,.6); }
+
+  .hint-line{ margin-top:14px; font-size:.85rem; color:var(--text-dim); min-height:1.2em; }
+  .sync-status{ margin-top:6px; font-size:.72rem; color:var(--text-dim); }
+  .sync-status.on{ color:var(--accent); }
+  .sync-status.off{ color:var(--gold); }
+
+  /* ============ WAITING SCREEN ============ */
+  #screen-waiting.is-active{ flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:40px 20px; position:relative; }
+  .waiting-pulse{ width:90px; height:90px; border-radius:50%; border:3px solid var(--team); margin:34px auto; position:relative; }
+  .waiting-pulse::before, .waiting-pulse::after{ content:''; position:absolute; inset:0; border-radius:50%; border:3px solid var(--team); animation:pulse-ring 2.2s ease-out infinite; }
+  .waiting-pulse::after{ animation-delay:1.1s; }
+  @keyframes pulse-ring{ 0%{ transform:scale(1); opacity:.8; } 100%{ transform:scale(2.4); opacity:0; } }
+
+  /* ============ Shared badge ============ */
+  .team-badge{ --c:var(--accent); display:flex; align-items:center; gap:12px; background:linear-gradient(90deg, color-mix(in srgb, var(--c) 18%, var(--panel)), var(--panel)); border:2px solid var(--c); border-radius:8px; padding:12px 16px; width:fit-content; }
+  .badge-emoji{ font-size:1.8rem; }
+  .badge-name{ font-family:var(--font-display); font-weight:700; font-size:.95rem; }
+
+  /* ============ GAME SCREEN ============ */
+  #screen-game.is-active{ flex-direction:row; width:100%; }
+  #sidebar{ width:340px; flex-shrink:0; background:var(--bg-deep); border-right:2px solid var(--panel-edge); padding:22px; display:flex; flex-direction:column; gap:16px; overflow-y:auto; max-height:100vh; }
+
+  .hud-panel{ background:var(--panel); border:1px solid var(--panel-edge); clip-path:polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px); padding:16px 18px; }
+  .hud-panel h3{ font-size:.72rem; letter-spacing:.18em; text-transform:uppercase; color:var(--text-dim); margin-bottom:12px; font-weight:700; }
+
+  .progress-track{ height:10px; background:var(--bg-void); border:1px solid var(--panel-edge); overflow:hidden; margin-bottom:8px; }
+  .progress-fill{ height:100%; width:0%; background:linear-gradient(90deg, var(--team), var(--cyan)); transition:width .6s cubic-bezier(.22,.9,.34,1); box-shadow:0 0 10px var(--team); }
+  .progress-label{ font-size:.85rem; color:var(--text-dim); font-weight:600; }
+  .progress-label span{ color:var(--text); font-family:var(--font-display); }
+
+  .inventory-grid{ display:grid; grid-template-columns:repeat(2, 1fr); gap:8px; }
+  .empty-note{ color:var(--text-dim); font-size:.88rem; grid-column:1/-1; }
+  .loot-card{ background:var(--bg-deep); border:1px solid var(--panel-edge); padding:8px 8px; display:flex; flex-direction:column; align-items:center; gap:4px; text-align:center; font-size:.7rem; color:var(--text); animation:card-in .4s ease; }
+  @keyframes card-in{ from{ opacity:0; transform:scale(.7) rotate(-4deg); } to{ opacity:1; transform:none; } }
+  .loot-icon{ font-size:1.3rem; }
+
+  .terminal-panel{ flex-grow:1; }
+  .terminal-desc{ font-size:.94rem; color:var(--text-dim); line-height:1.5; margin-top:2px; }
+  .terminal-done{ margin-top:12px; background:rgba(59,167,255,.12); border:1px solid var(--cyan); padding:12px; text-align:center; font-size:.85rem; display:flex; flex-direction:column; gap:6px; }
+  .loot-line{ color:var(--text-dim); font-size:.8rem; }
+
+  .code-block{ margin-top:18px; padding-top:14px; border-top:1px solid var(--panel-edge); }
+  .code-block label{ font-size:.72rem; letter-spacing:.14em; text-transform:uppercase; color:var(--text-dim); font-weight:700; }
+  .code-row{ display:flex; gap:8px; margin-top:8px; }
+  .code-row input{ flex-grow:1; min-width:0; padding:10px 12px; border:1px solid var(--panel-edge); background:var(--bg-void); color:var(--text); text-align:center; font-family:var(--font-display); letter-spacing:.06em; }
+  .code-row input:focus{ border-color:var(--accent); outline:none; }
+  .btn-verify{ background:var(--team); color:#04140f; border:none; padding:0 16px; font-weight:700; letter-spacing:.04em; cursor:pointer; font-size:.85rem; }
+  .btn-verify:hover{ filter:brightness(1.1); }
+  .code-error{ color:var(--danger); font-size:.78rem; margin-top:8px; display:none; font-weight:600; }
+  .code-error.show{ display:block; }
+  .code-block.shake{ animation:shake .4s ease; }
+  @keyframes shake{ 0%,100%{ transform:translateX(0); } 20%{ transform:translateX(-6px); } 40%{ transform:translateX(6px); } 60%{ transform:translateX(-4px); } 80%{ transform:translateX(4px); } }
+
+  #map-viewport{ flex-grow:1; position:relative; display:flex; align-items:center; justify-content:center; padding:28px; background:radial-gradient(circle at 50% 0%, rgba(0,229,160,.06), transparent 60%), var(--bg-void); }
+  .game-map{ position:relative; width:100%; max-width:640px; aspect-ratio:1200/731; border:3px solid var(--panel-edge); border-radius:10px; overflow:hidden; box-shadow:0 20px 50px -10px rgba(0,0,0,.7); }
+  .game-map img.map-image{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; filter:saturate(1.05); }
+
+  .fog-grid{ position:absolute; inset:0; z-index:2; display:grid; background:repeating-linear-gradient(45deg, rgba(255,255,255,.025) 0 2px, transparent 2px 7px), var(--bg-void); }
+  .tile{ background:rgba(7,10,18,.94); border:1px solid rgba(255,255,255,.035); pointer-events:none; transition:opacity .55s ease, transform .55s ease; }
+  .tile.revealed{ opacity:0; transform:scale(1.5); }
+
+  .radar-sweep{ position:absolute; inset:-25%; z-index:3; pointer-events:none; background:conic-gradient(from 0deg, transparent 0deg, rgba(0,229,160,.16) 18deg, transparent 46deg); animation:radar-spin 4s linear infinite; }
+  @keyframes radar-spin{ to{ transform:rotate(360deg); } }
+
+  .pins-layer{ position:absolute; inset:0; z-index:4; }
+  .pin{ position:absolute; transform:translate(-50%,-50%); width:13%; max-width:44px; min-width:28px; aspect-ratio:1; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.4rem; opacity:.4; pointer-events:none; }
+  .pin.state-active{ opacity:1; pointer-events:auto; cursor:pointer; background:var(--panel); border:3px solid var(--team); box-shadow:0 0 18px var(--team); animation:pin-bounce 1.8s ease-in-out infinite; }
+  .pin.state-active:hover{ background:var(--team); }
+  .pin.state-done{ opacity:1; pointer-events:auto; cursor:pointer; background:var(--team); border:3px solid #fff; }
+  @keyframes pin-bounce{ 0%,100%{ transform:translate(-50%,-50%); } 50%{ transform:translate(-50%, calc(-50% - 6px)); } }
+
+  /* ============ LEADERBOARD ============ */
+  #screen-leaderboard.is-active{ flex-direction:column; align-items:center; justify-content:center; padding:40px 20px; }
+  .leaderboard-wrap{ max-width:600px; width:100%; }
+  .leaderboard-table{ display:flex; flex-direction:column; gap:12px; margin-top:24px; }
+  .leaderboard-row{ display:grid; grid-template-columns:40px 1fr 100px 60px; gap:16px; align-items:center; background:var(--panel); border:1px solid var(--panel-edge); padding:12px 16px; border-radius:8px; animation:slide-in .3s ease; }
+  @keyframes slide-in{ from{ opacity:0; transform:translateX(-20px); } to{ opacity:1; } }
+  .rank{ font-size:1.8rem; font-family:var(--font-display); font-weight:700; color:var(--gold); }
+  .team-info{ display:flex; align-items:center; gap:8px; }
+  .team-icon{ font-size:1.4rem; }
+  .team-name{ font-weight:600; }
+  .progress-bar{ height:6px; background:var(--bg-void); border-radius:3px; overflow:hidden; }
+  .progress-bar-fill{ height:100%; background:linear-gradient(90deg, var(--accent), var(--cyan)); }
+  .progress-text{ font-size:.8rem; color:var(--text-dim); text-align:right; }
+
+  /* ============ VICTORY SCREEN ============ */
+  #screen-victory.is-active{ flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:40px 20px; background:radial-gradient(ellipse at 50% 20%, rgba(255,176,32,.14), transparent 60%), var(--bg-void); }
+  .victory-wrap{ max-width:600px; }
+  .victory-inventory{ margin:28px auto 0; max-width:420px; grid-template-columns:repeat(4,1fr); }
+
+  /* ============ ADMIN SCREEN ============ */
+  #screen-admin.is-active{ flex-direction:column; align-items:center; padding:32px 20px 60px; overflow-y:auto; }
+  .admin-wrap{ max-width:800px; width:100%; }
+  .admin-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:24px 0; }
+  .admin-control label{ display:block; font-size:.75rem; color:var(--text-dim); margin:10px 0 4px; font-weight:600; }
+  .admin-control input{ width:100%; padding:9px 10px; background:var(--bg-void); border:1px solid var(--panel-edge); color:var(--text); font-family:var(--font-body); }
+  .admin-status{ margin-top:10px; font-size:.8rem; color:var(--accent); min-height:1.2em; }
+  .btn-reset{ margin-top:14px; width:100%; padding:10px; background:transparent; border:1px solid var(--danger); color:var(--danger); font-weight:700; cursor:pointer; }
+  .btn-reset:hover{ background:rgba(255,77,109,.1); }
+
+  .admin-teams{ margin-bottom:16px; }
+  .admin-team-table{ display:flex; flex-direction:column; gap:6px; max-height:300px; overflow-y:auto; }
+  .admin-team-row{ display:grid; grid-template-columns:32px 1fr 60px auto; gap:10px; align-items:center; background:var(--bg-deep); border:1px solid var(--panel-edge); padding:8px 10px; font-size:.82rem; }
+  .admin-team-icon{ font-size:1.2rem; text-align:center; }
+  .admin-team-name{ color:var(--text); font-weight:600; }
+  .admin-team-progress{ color:var(--accent); font-weight:700; font-family:var(--font-display); font-size:.75rem; }
+  .admin-team-status{ font-size:.7rem; padding:3px 6px; border-radius:3px; text-align:center; }
+  .admin-team-status.active{ background:rgba(0,229,160,.25); color:var(--accent); }
+  .admin-team-status.waiting{ background:rgba(255,176,32,.25); color:var(--gold); }
+
+  /* ============ Event overlay ============ */
+  .event-overlay{ position:fixed; inset:0; z-index:9997; display:flex; align-items:center; justify-content:center; background:rgba(4,7,14,.86); backdrop-filter:blur(3px); padding:20px; }
+  .event-overlay.hidden{ display:none; }
+  .event-card{ background:linear-gradient(180deg, var(--panel), var(--bg-deep)); border:2px solid var(--gold); box-shadow:0 0 40px -6px var(--gold); padding:32px; max-width:440px; text-align:center; border-radius:8px; animation:event-pop .4s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes event-pop{ from{ transform:scale(.85); opacity:0; } to{ transform:scale(1); opacity:1; } }
+  .event-eyebrow{ font-size:.72rem; letter-spacing:.18em; text-transform:uppercase; color:var(--gold); font-weight:700; margin-bottom:10px; }
+  .event-card h2{ font-size:1.3rem; margin-bottom:12px; }
+  #event-message{ color:var(--text-dim); font-size:.95rem; line-height:1.5; margin-bottom:20px; display:block; }
+  #event-close-btn{ background:var(--gold); border:none; color:#241900; font-weight:700; padding:10px 26px; cursor:pointer; }
+
+  /* ============ Confetti ============ */
+  .confetti-piece{ position:fixed; width:8px; height:14px; border-radius:2px; z-index:9998; pointer-events:none; animation-name:confetti-fall; animation-timing-function:ease-out; animation-fill-mode:forwards; }
+  @keyframes confetti-fall{ 0%{ transform:translate(0,0) rotate(0deg); opacity:1; } 100%{ transform:translate(var(--dx), var(--dy)) rotate(var(--rot)); opacity:0; } }
+
+  /* ============ Responsive ============ */
+  @media (max-width: 860px){
+    #screen-game.is-active{ flex-direction:column; }
+    #sidebar{ width:100%; max-height:none; border-right:none; border-bottom:2px solid var(--panel-edge); order:2; }
+    #map-viewport{ order:1; padding:18px; }
+    .admin-grid{ grid-template-columns:1fr; }
+    .admin-team-row{ grid-template-columns:26px 1fr 44px; }
+    .leaderboard-row{ grid-template-columns:40px 1fr 50px; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .star, .pin.state-active, .radar-sweep, .confetti-piece{ animation:none !important; }
+    .tile{ transition:none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="scanlines" aria-hidden="true"></div>
+
+<div id="app">
+
+  <section id="screen-join" class="screen is-active">
+    <div class="starfield" id="starfield" aria-hidden="true"></div>
+    <div class="title-wrap">
+      <p class="eyebrow">Séminaire RSE · Domaine de Dienné</p>
+      <h1 class="logo">MISSION <span class="logo-accent">2035</span></h1>
+      <p class="tagline">Huit défis répartis sur le domaine. Réussissez-les pour révéler la carte ensemble.</p>
+
+      <div class="name-field">
+        <label for="team-name-input">Nom de votre équipe</label>
+        <input type="text" id="team-name-input" maxlength="24" placeholder="Ex: Les Renards du Futur" autocomplete="off">
+        <p class="admin-hint">Organisateur : entrez « admin » pour accéder au panneau de contrôle.</p>
+      </div>
+
+      <div id="icon-section">
+        <span class="pick-label">Choisissez votre emblème</span>
+        <div class="icon-grid" id="icon-grid"></div>
+      </div>
+
+      <button id="join-btn" class="btn-launch" disabled type="button">Rejoindre la mission</button>
+      <p class="hint-line" id="join-hint">Entrez un nom d'équipe et choisissez un emblème</p>
+      <p class="sync-status" id="sync-status">🌐 Synchronisation multijoueur active</p>
+    </div>
+  </section>
+
+  <section id="screen-waiting" class="screen">
+    <div class="team-badge" id="waiting-badge"></div>
+    <h2 class="logo small" style="margin-top:28px;">EN <span class="logo-accent">ATTENTE</span></h2>
+    <p class="tagline">L'organisateur va bientôt donner le top départ.</p>
+    <div class="waiting-pulse" aria-hidden="true"></div>
+    <p class="hint-line">Restez sur cette page — la mission démarrera automatiquement pour toutes les équipes.</p>
+  </section>
+
+  <section id="screen-game" class="screen">
+    <aside id="sidebar">
+      <div class="team-badge" id="team-badge"></div>
+      <div class="hud-panel">
+        <h3>Progression</h3>
+        <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+        <p class="progress-label"><span id="progress-count">0</span>/8 lieux révélés</p>
+        <button id="view-leaderboard-btn" class="btn-launch secondary" type="button" style="margin-top:12px; padding:8px; font-size:0.8rem;">🏆 Voir le classement</button>
+      </div>
+      <div class="hud-panel">
+        <h3>Ressources acquises</h3>
+        <div class="inventory-grid" id="inventory-grid">
+          <p class="empty-note" id="inventory-empty">Aucune ressource pour l'instant</p>
+        </div>
+      </div>
+      <div class="hud-panel terminal-panel" id="details-panel">
+        <h3>Terminal de mission</h3>
+        <p class="empty-note">Repérez le lieu actif (pastille brillante) sur la carte et rendez-vous sur place.</p>
+      </div>
+    </aside>
+    <div id="map-viewport">
+      <div id="game-map" class="game-map">
+        <img class="map-image" id="map-image" alt="Carte du domaine de Dienné">
+        <div class="fog-grid" id="fog-grid"></div>
+        <div class="radar-sweep" aria-hidden="true"></div>
+        <div class="pins-layer" id="pins-layer"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="screen-leaderboard" class="screen">
+    <div class="leaderboard-wrap">
+      <p class="eyebrow">🏆 Classement</p>
+      <h1 class="logo small">PROGRESSION <span class="logo-accent">EN DIRECT</span></h1>
+      <p class="tagline">Tous les classements se mettent à jour automatiquement</p>
+      <div class="leaderboard-table" id="leaderboard-table"></div>
+      <button id="back-to-game-btn" class="btn-launch secondary" type="button" style="margin-top:28px;">← Retour au jeu</button>
+    </div>
+  </section>
+
+  <section id="screen-victory" class="screen">
+    <div class="victory-wrap">
+      <p class="eyebrow">Mission accomplie</p>
+      <h1 class="logo small">CARTE <span class="logo-accent">RÉVÉLÉE</span></h1>
+      <p class="tagline" id="victory-team-line"></p>
+      <div class="inventory-grid victory-inventory" id="victory-inventory"></div>
+      <button id="replay-btn" class="btn-launch secondary" type="button">🏠 Retour à l'accueil</button>
+    </div>
+  </section>
+
+  <section id="screen-admin" class="screen">
+    <div class="admin-wrap">
+      <p class="eyebrow">Panneau organisateur</p>
+      <h1 class="logo small">MISSION <span class="logo-accent">CONTRÔLE</span></h1>
+
+      <div class="admin-grid">
+        <div class="hud-panel admin-control">
+          <h3>Contrôle de mission</h3>
+          <button id="admin-start-btn" class="btn-launch" type="button" style="margin-top:6px;">🚀 Lancer le top départ</button>
+          <p class="admin-status" id="admin-start-status">Mission non démarrée</p>
+          <button id="admin-reset-btn" class="btn-reset" type="button">♻️ Réinitialiser la mission</button>
+        </div>
+        <div class="hud-panel admin-control">
+          <h3>Diffuser un événement</h3>
+          <label for="event-title-input">Titre</label>
+          <input type="text" id="event-title-input" maxlength="40" placeholder="Ex: Alerte météo">
+          <label for="event-message-input">Message</label>
+          <input type="text" id="event-message-input" maxlength="140" placeholder="Ex: Rejoignez le QG immédiatement">
+          <button id="admin-event-btn" class="btn-verify" type="button" style="width:100%; padding:10px; margin-top:12px;">📢 Déclencher pour toutes les équipes</button>
+          <p class="admin-status" id="admin-event-status"></p>
+        </div>
+      </div>
+
+      <div class="hud-panel admin-teams">
+        <h3>Équipes en ligne (<span id="admin-team-count">0</span>)</h3>
+        <div id="admin-team-list" class="admin-team-table"></div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<div class="event-overlay hidden" id="event-overlay">
+  <div class="event-card">
+    <p class="event-eyebrow">📢 Message de l'organisateur</p>
+    <h2 id="event-title"></h2>
+    <span id="event-message"></span>
+    <button id="event-close-btn" type="button">Fermer</button>
+  </div>
+</div>
+
+<div id="confetti-layer" aria-hidden="true"></div>
+
+<script>
+(function(){
+  'use strict';
+
+  var IMG_W = 1200, IMG_H = 731;
+  var COLS = 26, ROWS = 16;
+  var REVEAL_RADIUS = 300;
+  var MAP_DATA_URI = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCAAtALgDASIAAhEBAxEB/8QAGgAAAgMBAQAAAAAAAAAAAAAAAAECAwQFBv/EAC4QAAICAQMCBQQBBQADAAAAAAAEAQIDERIhMQRBEzJRBSJhcYGRscHwI0LR/8QAFgEBAQEAAAAAAAAAAAAAAAAAAAEC/8QAFhEBAQEAAAAAAAAAAAAAAAAEAXGx/9oADAMBAAIRAxEAPwD9R3EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/9k=';
+
+  var ICONS = ['🦁','🐺','🦊','🐻','🦌','🦉','🐢','🦅','🐝','🌸','🌳','💧','🔥','⭐','🧭'];
+  var PALETTE = ['#3ba7ff','#9b7cf6','#ff8a3d','#ffb020','#00e5a0','#ff5d8f','#f43f5e','#22d3ee','#a3e635','#fb923c'];
+
+  var ZONES = [
+    { id:1, title:"Forêt - Défi Biodiversité", icon:'🌳', code:'775',
+      loot:"💎 10 Points par balise",
+      desc:"Retrouvez les balises dans la forêt. Demandez le code à l'animateur une fois terminé.",
+      top:15, left:25 },
+    { id:2, title:"Prairie - Mobilité Durable", icon:'🚲', code:'356',
+      loot:"🃏 Carte Mobilité Douce",
+      desc:"Achevez le parcours collaboratif pour obtenir le code d'accès.",
+      top:65, left:80 },
+    { id:3, title:"Étang - Gestion de l'Eau", icon:'💧', code:'255',
+      loot:"🃏 Carte Résilience",
+      desc:"Alimentez la mini-ville en eau pour récupérer votre code.",
+      top:50, left:38 },
+    { id:4, title:"Hébergements - Habitat", icon:'🏕️', code:'268',
+      loot:"🃏 Carte Matériaux",
+      desc:"Construisez une structure stable avec votre équipe.",
+      top:78, left:47 },
+    { id:5, title:"QG - Marché", icon:'🏛️', code:'989',
+      loot:"⚖️ Droit d'échange",
+      desc:"Passez au marché des ressources pour valider cette étape.",
+      top:20, left:65 },
+    { id:6, title:"Logistique - Éco Circulaire", icon:'♻️', code:'564',
+      loot:"🃏 Carte Éco Circulaire",
+      desc:"Réparez l'objet défectueux avec le bon bilan carbone.",
+      top:40, left:85 },
+    { id:7, title:"Data - Algorithme Humain", icon:'🧠', code:'617',
+      loot:"🃏 Carte IA Responsable",
+      desc:"Reconstruisez le puzzle à l'aveugle grâce à la communication.",
+      top:70, left:60 },
+    { id:8, title:"Énergie - Production", icon:'⚡', code:'446',
+      loot:"🃏 Carte Énergie",
+      desc:"Produisez l'énergie collective nécessaire via le parcours fitness !",
+      top:88, left:12 }
+  ];
+
+  var state = { team:null, slug:null, lastSeenEventTs:0 };
+  var fogTiles = [];
+  var audioCtx = null;
+  var selectedIcon = null;
+  var allPlayers = {};
+  var gameStarted = false;
+
+  async function initPlayroom() {
+    try {
+      await window.Playroom.insertCoin({
+        gameId: 'mission-2035',
+        maxPlayers: 100
+      });
+      
+      console.log('✅ Playroom initialisé avec succès');
+      
+      // Écouteurs d'événements globaux pour la synchronisation en temps réel
+      window.Playroom.onEvent('game-started', function() {
+        gameStarted = true;
+        if (state.team && document.getElementById('screen-waiting').classList.contains('is-active')) {
+          enterGame();
+        }
+      });
+      
+      window.Playroom.onEvent('show-event', function(data) {
+        showEventOverlay(data);
+      });
+      
+      window.Playroom.onEvent('game-reset', function() {
+        gameStarted = false;
+        returnToJoin();
+      });
+      
+      // Boucle de rafraîchissement périodique des bases de données de l'interface (1s)
+      setInterval(function() {
+        updateAllPlayers();
+        if (document.getElementById('screen-leaderboard').classList.contains('is-active')) {
+          updateLeaderboard();
+        }
+        if (document.getElementById('screen-admin').classList.contains('is-active')) {
+          refreshAdminTeams();
+        }
+      }, 1000);
+      
+      updateAllPlayers();
+    } catch(e) {
+      console.error('Erreur Playroom:', e);
+    }
+  }
+
+  function updateAllPlayers() {
+    if (typeof window.Playroom === 'undefined' || !window.Playroom.getPlayers) return;
+    allPlayers = {};
+    window.Playroom.getPlayers().forEach(function(p) {
+      var name = p.getState('name');
+      if (name) {
+        allPlayers[p.id] = {
+          name: name,
+          icon: p.getState('icon') || '❓',
+          color: p.getState('color') || '#00e5a0',
+          pathIndex: p.getState('pathIndex') || 0,
+          completed: p.getState('completed') || '[]',
+          inventory: p.getState('inventory') || '[]'
+        };
+      }
+    });
+  }
+
+  /* ---------- utility ---------- */
+  function shuffle(arr){
+    var a = arr.slice();
+    for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var tmp=a[i]; a[i]=a[j]; a[j]=tmp; }
+    return a;
+  }
+  function getZone(id){ for(var i=0;i<ZONES.length;i++){ if(ZONES[i].id===id) return ZONES[i]; } return null; }
+  function slugify(name){
+    return String(name).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/(^-+|-+$)/g,'').slice(0,30) || 'equipe';
+  }
+  function colorForSlug(slug){
+    var h=0; for(var i=0;i<slug.length;i++){ h=(h*31+slug.charCodeAt(i))>>>0; }
+    return PALETTE[h % PALETTE.length];
+  }
+
+  /* ---------- audio ---------- */
+  function ensureAudio(){
+    if(!audioCtx){ try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
+    if(audioCtx && audioCtx.state==='suspended'){ audioCtx.resume(); }
+  }
+  function tone(freq, start, dur, type, gain){
+    if(!audioCtx) return;
+    type = type||'sine'; gain = gain==null?0.18:gain;
+    var osc=audioCtx.createOscillator(), g=audioCtx.createGain();
+    osc.type=type; osc.frequency.value=freq; osc.connect(g); g.connect(audioCtx.destination);
+    var t0=audioCtx.currentTime+start;
+    g.gain.setValueAtTime(0.0001,t0);
+    g.gain.linearRampToValueAtTime(gain,t0+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+    osc.start(t0); osc.stop(t0+dur+0.03);
+  }
+  function sndSuccess(){ ensureAudio(); tone(523.25,0,0.16); tone(659.25,0.1,0.16); tone(783.99,0.2,0.28); }
+  function sndError(){ ensureAudio(); tone(180,0,0.22,'sawtooth',0.12); tone(120,0.12,0.26,'sawtooth',0.12); }
+  function sndUnlock(){ ensureAudio(); tone(440,0,0.12); tone(554.37,0.08,0.12); tone(659.25,0.16,0.22); }
+  function sndVictory(){ ensureAudio(); var n=[523.25,659.25,783.99,1046.5]; for(var i=0;i<n.length;i++){ tone(n[i], i*0.14, 0.3); } }
+  function sndClick(){ ensureAudio(); tone(300,0,0.05,'square',0.06); }
+  function sndEvent(){ ensureAudio(); tone(660,0,0.15,'square',0.14); tone(520,0.18,0.15,'square',0.14); tone(660,0.36,0.2,'square',0.14); }
+
+  function showScreen(id){
+    var screens=document.querySelectorAll('.screen');
+    for(var i=0;i<screens.length;i++){ screens[i].classList.toggle('is-active', screens[i].id===id); }
+  }
+
+  function renderBadge(container, team){
+    container.innerHTML='';
+    container.style.setProperty('--c', team.color);
+    var e=document.createElement('span'); e.className='badge-emoji'; e.textContent=team.icon;
+    var n=document.createElement('span'); n.className='badge-name'; n.textContent=team.name;
+    container.appendChild(e); container.appendChild(n);
+  }
+
+  /* ---------- starfield & icon grid ---------- */
+  function buildStarfield(){
+    var field=document.getElementById('starfield');
+    var frag=document.createDocumentFragment();
+    for(var i=0;i<70;i++){
+      var s=document.createElement('span'); s.className='star';
+      s.style.left=(Math.random()*100)+'%'; s.style.top=(Math.random()*100)+'%';
+      var size=Math.random()*2+1; s.style.width=size+'px'; s.style.height=size+'px';
+      s.style.animationDelay=(Math.random()*4)+'s'; s.style.animationDuration=(2.5+Math.random()*3)+'s';
+      frag.appendChild(s);
+    }
+    field.appendChild(frag);
+  }
+  function buildIconGrid(){
+    var grid=document.getElementById('icon-grid');
+    grid.innerHTML='';
+    ICONS.forEach(function(ic){
+      var btn=document.createElement('button');
+      btn.type='button'; btn.className='icon-btn'; btn.dataset.icon=ic; btn.textContent=ic;
+      btn.setAttribute('aria-label','Choisir cet emblème');
+      btn.addEventListener('click', function(){ selectIcon(this.dataset.icon); });
+      grid.appendChild(btn);
+    });
+  }
+  function selectIcon(ic){
+    selectedIcon=ic; ensureAudio(); sndClick();
+    var btns=document.querySelectorAll('.icon-btn');
+    for(var i=0;i<btns.length;i++){ btns[i].classList.toggle('selected', btns[i].dataset.icon===ic); }
+    updateJoinButtonState();
+  }
+  function updateJoinButtonState(){
+    var name=document.getElementById('team-name-input').value.trim();
+    var slug=slugify(name);
+    var isAdmin = slug==='admin';
+    document.getElementById('icon-section').style.display = isAdmin ? 'none' : 'block';
+    document.getElementById('join-btn').textContent = isAdmin ? "Entrer dans le panneau organisateur" : "Rejoindre la mission";
+    var ready = name.length>0 && (isAdmin || !!selectedIcon);
+    document.getElementById('join-btn').disabled = !ready;
+    document.getElementById('join-hint').textContent = ready ? "Prêt à embarquer !" : (isAdmin ? "Cliquez pour continuer" : "Entrez un nom d'équipe et choisissez un emblème");
+  }
+
+  /* ---------- join flow ---------- */
+  function joinMission(){
+    var nameInput=document.getElementById('team-name-input');
+    var name=nameInput.value.trim();
+    if(!name) return;
+    var slug=slugify(name);
+
+    if(slug==='admin'){ enterAdmin(); return; }
+    if(!selectedIcon) return;
+
+    ensureAudio(); sndUnlock();
+    var joinBtn=document.getElementById('join-btn');
+    joinBtn.disabled=true; joinBtn.textContent='Connexion...';
+
+    var color = colorForSlug(slug);
+    state.team = {
+      name:name, icon:selectedIcon, color:color,
+      path:shuffle(ZONES.map(function(z){ return z.id; })),
+      pathIndex:0, completed:[], inventory:[], slug: slug
+    };
+    state.slug = slug;
+
+    // Définition de l'état réseau avec l'API Playroom officielle
+    var me = window.Playroom.myPlayer();
+    if(me) {
+      me.setState('name', name);
+      me.setState('icon', selectedIcon);
+      me.setState('color', color);
+      me.setState('pathIndex', 0);
+      me.setState('completed', '[]');
+      me.setState('inventory', '[]');
+    }
+
+    document.documentElement.style.setProperty('--team', color);
+    renderBadge(document.getElementById('waiting-badge'), state.team);
+    showScreen('screen-waiting');
+    joinBtn.disabled=false; joinBtn.textContent='Rejoindre la mission';
+
+    // Transition si la partie a déjà commencé
+    if (gameStarted) {
+      enterGame();
+    }
+  }
+
+  /* ---------- game screen ---------- */
+  function buildPins(layerId, prefix, interactive){
+    var layer=document.getElementById(layerId);
+    layer.innerHTML='';
+    ZONES.forEach(function(zone){
+      var pin=document.createElement('div');
+      pin.className='pin' + (interactive ? ' state-locked' : '');
+      pin.id=prefix+zone.id;
+      pin.style.top=zone.top+'%'; pin.style.left=zone.left+'%';
+      pin.dataset.order=zone.id;
+      var span=document.createElement('span'); span.textContent=zone.icon;
+      pin.appendChild(span);
+      if(interactive){
+        pin.setAttribute('role','button'); pin.setAttribute('tabindex','0');
+        pin.setAttribute('aria-label', zone.title);
+        pin.addEventListener('click', function(){ selectZone(parseInt(this.id.replace('pin-',''),10)); });
+        pin.addEventListener('keyup', function(e){ if(e.key==='Enter'||e.key===' '){ selectZone(parseInt(this.id.replace('pin-',''),10)); } });
+      }
+      layer.appendChild(pin);
+    });
+  }
+
+  function resetFogDom(){
+    fogTiles.forEach(function(t){ t.classList.remove('revealed'); t.style.transitionDelay='0s'; t.style.transition=''; });
+  }
+
+  function enterGame(){
+    document.documentElement.style.setProperty('--team', state.team.color);
+    renderBadge(document.getElementById('team-badge'), state.team);
+    buildPins('pins-layer','pin-', true);
+    buildFogGrid();
+    applyResumeState();
+    showScreen('screen-game');
+  }
+
+  function applyResumeState(){
+    resetFogDom();
+    var completed = state.team.completed || [];
+    var completedSet={}; completed.forEach(function(id){ completedSet[id]=true; });
+    ZONES.forEach(function(z){
+      var pin=document.getElementById('pin-'+z.id);
+      if(!pin) return;
+      if(completedSet[z.id]){
+        pin.classList.remove('state-locked','state-active'); pin.classList.add('state-done');
+        revealZone(z, true);
+      } else {
+        pin.classList.remove('state-active','state-done'); pin.classList.add('state-locked');
+      }
+    });
+    updateProgress();
+    renderInventory();
+    if(state.team.pathIndex < state.team.path.length){
+      unlockCurrent();
+    } else if(completed.length >= ZONES.length){
+      showVictory();
+    }
+  }
+
+  function unlockCurrent(){
+    var zoneId=state.team.path[state.team.pathIndex];
+    if(zoneId==null) return;
+    var pin=document.getElementById('pin-'+zoneId);
+    if(pin) {
+      pin.classList.remove('state-locked','state-done'); pin.classList.add('state-active');
+    }
+    renderTerminal(zoneId);
+  }
+
+  function selectZone(zoneId){
+    var pin=document.getElementById('pin-'+zoneId);
+    if(!pin || pin.classList.contains('state-locked')) return;
+    sndClick();
+    renderTerminal(zoneId);
+  }
+
+  function renderTerminal(zoneId){
+    var zone=getZone(zoneId);
+    var panel=document.getElementById('details-panel');
+    var isDone = (state.team.completed||[]).indexOf(zoneId) !== -1;
+    var isCurrent = state.team.path[state.team.pathIndex]===zoneId;
+
+    panel.innerHTML='';
+    var h3=document.createElement('h3'); h3.textContent=zone.icon+' '+zone.title; panel.appendChild(h3);
+
+    if(isDone){
+      var doneBox=document.createElement('div'); doneBox.className='terminal-done';
+      doneBox.innerHTML='✅ <strong>Lieu révélé</strong>';
+      var lootLine=document.createElement('span'); lootLine.className='loot-line'; lootLine.textContent='Ressource obtenue : '+zone.loot;
+      doneBox.appendChild(lootLine);
+      panel.appendChild(doneBox);
+      return;
+    }
+    if(!isCurrent){
+      var p=document.createElement('p'); p.className='empty-note'; p.textContent="Ce lieu n'est pas encore accessible.";
+      panel.appendChild(p);
+      return;
+    }
+    var desc=document.createElement('p'); desc.className='terminal-desc'; desc.textContent=zone.desc; panel.appendChild(desc);
+
+    var block=document.createElement('div'); block.className='code-block';
+    block.innerHTML =
+      '<label for="secret-code">Code d\'accès (3 chiffres)</label>'+
+      '<div class="code-row">'+
+        '<input type="text" id="secret-code" placeholder="•••" inputmode="numeric" pattern="[0-9]*" autocomplete="off" maxlength="3">'+
+        '<button id="verify-btn" class="btn-verify" type="button">Valider</button>'+
+      '</div>'+
+      '<p class="code-error" id="code-error">❌ Code incorrect. Réessayez.</p>';
+    panel.appendChild(block);
+
+    document.getElementById('verify-btn').addEventListener('click', function(){ verifyCode(zoneId); });
+    var input=document.getElementById('secret-code');
+    input.addEventListener('keyup', function(e){ if(e.key==='Enter'){ verifyCode(zoneId); } });
+    input.focus();
+  }
+
+  function verifyCode(zoneId){
+    var zone=getZone(zoneId);
+    var input=document.getElementById('secret-code');
+    var value=(input.value||'').trim();
+    var errorEl=document.getElementById('code-error');
+    if(value===zone.code){
+      completeZone(zoneId);
+    } else {
+      sndError();
+      errorEl.classList.add('show');
+      var block=document.querySelector('.code-block');
+      if(block){ block.classList.add('shake'); setTimeout(function(){ block.classList.remove('shake'); },400); }
+      setTimeout(function(){ errorEl.classList.remove('show'); },2600);
+    }
+  }
+
+  function completeZone(zoneId){
+    var zone=getZone(zoneId);
+    state.team.completed=state.team.completed||[];
+    state.team.completed.push(zoneId);
+    state.team.inventory=state.team.inventory||[];
+    state.team.inventory.push(zoneId);
+
+    var pin=document.getElementById('pin-'+zoneId);
+    if(pin) {
+      pin.classList.remove('state-active'); pin.classList.add('state-done');
+    }
+
+    sndSuccess();
+    revealZone(zone, false);
+    spawnConfetti(state.team.color);
+    renderInventory();
+
+    state.team.pathIndex++;
+    updateProgress();
+    
+    // Envoi des nouvelles données vers le réseau Playroom
+    var me = window.Playroom.myPlayer();
+    if (me) {
+      me.setState('pathIndex', state.team.pathIndex);
+      me.setState('completed', JSON.stringify(state.team.completed));
+      me.setState('inventory', JSON.stringify(state.team.inventory));
+    }
+    updateAllPlayers();
+
+    if(state.team.pathIndex < state.team.path.length){
+      setTimeout(function(){ sndUnlock(); unlockCurrent(); },600);
+    } else {
+      setTimeout(function(){ showVictory(); },900);
+    }
+  }
+
+  function updateProgress(){
+    var count=(state.team.completed||[]).length;
+    document.getElementById('progress-count').textContent=count;
+    document.getElementById('progress-fill').style.width=(count/ZONES.length*100)+'%';
+  }
+
+  function renderInventory(){
+    var grid=document.getElementById('inventory-grid');
+    var empty=document.getElementById('inventory-empty');
+    var existing=grid.querySelectorAll('.loot-card');
+    for(var i=0;i<existing.length;i++){ existing[i].remove(); }
+    var inv=state.team.inventory||[];
+    if(inv.length===0){ if(empty) empty.style.display='block'; return; }
+    if(empty) empty.style.display='none';
+    inv.forEach(function(id){
+      var zone=getZone(id); if(!zone) return;
+      var card=document.createElement('div'); card.className='loot-card';
+      var ic=document.createElement('span'); ic.className='loot-icon'; ic.textContent=zone.icon;
+      var tx=document.createElement('span'); tx.className='loot-text'; tx.textContent=zone.loot;
+      card.appendChild(ic); card.appendChild(tx);
+      grid.appendChild(card);
+    });
+  }
+
+  /* ---------- leaderboard ---------- */
+  function updateLeaderboard(){
+    var table = document.getElementById('leaderboard-table');
+    if(!table) return;
+    table.innerHTML = '';
+    
+    var teams = [];
+    for (var key in allPlayers) {
+      var p = allPlayers[key];
+      if (p.name) {
+        var completedList = [];
+        try { completedList = JSON.parse(p.completed || '[]'); } catch(e){}
+        teams.push({
+          name: p.name,
+          icon: p.icon,
+          color: p.color,
+          progress: completedList.length
+        });
+      }
+    }
+    
+    teams.sort(function(a, b) { return b.progress - a.progress; });
+    
+    teams.forEach(function(team, idx) {
+      var row = document.createElement('div');
+      row.className = 'leaderboard-row';
+      row.style.setProperty('--c', team.color);
+      
+      var medal = ['🥇', '🥈', '🥉'][idx] || (idx + 1);
+      
+      row.innerHTML = 
+        '<div class="rank">' + medal + '</div>' +
+        '<div class="team-info">' +
+          '<span class="team-icon">' + team.icon + '</span>' +
+          '<span class="team-name">' + team.name + '</span>' +
+        '</div>' +
+        '<div>' +
+          '<div class="progress-bar">' +
+            '<div class="progress-bar-fill" style="width:' + (team.progress/8*100) + '%"></div>' +
+          '</div>' +
+          '<div class="progress-text">' + team.progress + '/8</div>' +
+        '</div>';
+      
+      table.appendChild(row);
+    });
+  }
+
+  /* ---------- fog of war ---------- */
+  function buildFogGrid(){
+    var grid=document.getElementById('fog-grid');
+    grid.style.gridTemplateColumns='repeat('+COLS+', 1fr)';
+    grid.style.gridTemplateRows='repeat('+ROWS+', 1fr)';
+    var frag=document.createDocumentFragment();
+    fogTiles=[];
+    for(var r=0;r<ROWS;r++){
+      for(var c=0;c<COLS;c++){
+        var tile=document.createElement('div'); tile.className='tile';
+        tile.dataset.cx=((c+0.5)/COLS*100).toFixed(3);
+        tile.dataset.cy=((r+0.5)/ROWS*100).toFixed(3);
+        frag.appendChild(tile); fogTiles.push(tile);
+      }
+    }
+    grid.appendChild(frag);
+  }
+  function revealZone(zone, instant){
+    fogTiles.forEach(function(tile){
+      if(tile.classList.contains('revealed')) return;
+      var cx=parseFloat(tile.dataset.cx), cy=parseFloat(tile.dataset.cy);
+      var dx=(cx-zone.left)/100*IMG_W, dy=(cy-zone.top)/100*IMG_H;
+      var dist=Math.sqrt(dx*dx+dy*dy);
+      if(dist<=REVEAL_RADIUS){
+        if(instant){
+          tile.style.transition='none'; tile.classList.add('revealed');
+          requestAnimationFrame(function(t){ return function(){ t.style.transition=''; }; }(tile));
+        } else {
+          tile.style.transitionDelay=((dist/REVEAL_RADIUS)*0.35).toFixed(2)+'s';
+          tile.classList.add('revealed');
+        }
+      }
+    });
+  }
+
+  /* ---------- confetti ---------- */
+  function spawnConfetti(color){
+    var layer=document.getElementById('confetti-layer');
+    var colors=[color,'#ffb020','#3ba7ff','#ffffff'];
+    for(var i=0;i<36;i++){
+      var p=document.createElement('div'); p.className='confetti-piece';
+      p.style.left=(45+Math.random()*10)+'vw'; p.style.top='38vh';
+      p.style.background=colors[Math.floor(Math.random()*colors.length)];
+      var dx=(Math.random()-0.5)*70, dy=60+Math.random()*35, rot=(Math.random()-0.5)*720;
+      p.style.setProperty('--dx',dx+'vw'); p.style.setProperty('--dy',dy+'vh'); p.style.setProperty('--rot',rot+'deg');
+      p.style.animationDuration=(1.1+Math.random()*0.8)+'s';
+      layer.appendChild(p);
+      (function(el){ el.addEventListener('animationend', function(){ el.remove(); }); })(p);
+    }
+  }
+
+  /* ---------- victory ---------- */
+  function showVictory(){
+    sndVictory();
+    document.getElementById('victory-team-line').textContent =
+      'Bravo '+state.team.icon+' '+state.team.name+' ! Vous avez révélé l\'intégralité de la carte du domaine.';
+    var grid=document.getElementById('victory-inventory'); grid.innerHTML='';
+    (state.team.inventory||[]).forEach(function(id){
+      var zone=getZone(id); if(!zone) return;
+      var card=document.createElement('div'); card.className='loot-card';
+      var ic=document.createElement('span'); ic.className='loot-icon'; ic.textContent=zone.icon;
+      var tx=document.createElement('span'); tx.className='loot-text'; tx.textContent=zone.loot;
+      card.appendChild(ic); card.appendChild(tx);
+      grid.appendChild(card);
+    });
+    spawnConfetti(state.team.color);
+    setTimeout(function(){ spawnConfetti('#ffb020'); },400);
+    showScreen('screen-victory');
+  }
+
+  function returnToJoin(){
+    state={ team:null, slug:null, lastSeenEventTs:0 };
+    document.getElementById('team-name-input').value='';
+    selectedIcon=null;
+    var btns=document.querySelectorAll('.icon-btn');
+    for(var i=0;i<btns.length;i++){ btns[i].classList.remove('selected'); }
+    updateJoinButtonState();
+    showScreen('screen-join');
+  }
+
+  function showEventOverlay(evt){
+    document.getElementById('event-title').textContent = evt.title || 'Événement spécial';
+    document.getElementById('event-message').textContent = evt.message || '';
+    document.getElementById('event-overlay').classList.remove('hidden');
+    sndEvent();
+    spawnConfetti('#ffb020');
+  }
+
+  /* ---------- admin ---------- */
+  function enterAdmin(){
+    document.getElementById('join-btn').disabled=false;
+    document.getElementById('join-btn').textContent='Entrer dans le panneau organisateur';
+    showScreen('screen-admin');
+    refreshAdminTeams();
+  }
+
+  function refreshAdminTeams(){
+    if (typeof window.Playroom === 'undefined' || !window.Playroom.getPlayers) return;
+    var list = document.getElementById('admin-team-list');
+    if(!list) return;
+    list.innerHTML = '';
+    
+    var teams = window.Playroom.getPlayers().filter(function(p){ return p.getState('name'); });
+    document.getElementById('admin-team-count').textContent = teams.length;
+    
+    teams.forEach(function(team) {
+      var row = document.createElement('div');
+      row.className = 'admin-team-row';
+      
+      var completedList = [];
+      try { completedList = JSON.parse(team.getState('completed') || '[]'); } catch(e){}
+      
+      row.innerHTML = 
+        '<div class="admin-team-icon">' + (team.getState('icon') || '❓') + '</div>' +
+        '<div class="admin-team-name">' + team.getState('name') + '</div>' +
+        '<div class="admin-team-progress">' + completedList.length + '/8</div>' +
+        '<div class="admin-team-status active">🟢 En ligne</div>';
+      
+      list.appendChild(row);
+    });
+  }
+
+  function handleAdminStart(){
+    ensureAudio(); sndUnlock();
+    gameStarted = true;
+    
+    if (typeof window.Playroom !== 'undefined') {
+      window.Playroom.broadcastEvent('game-started', {});
+    }
+    
+    document.getElementById('admin-start-btn').textContent = '✅ Mission en cours';
+    document.getElementById('admin-start-btn').disabled = true;
+    document.getElementById('admin-start-status').textContent = 'Démarrée à ' + new Date().toLocaleTimeString();
+  }
+
+  function handleAdminEvent(){
+    var title=(document.getElementById('event-title-input').value||'').trim() || 'Événement spécial';
+    var message=(document.getElementById('event-message-input').value||'').trim();
+    var status=document.getElementById('admin-event-status');
+    if(!message){ status.textContent='Écrivez un message avant de diffuser.'; return; }
+    ensureAudio(); sndUnlock();
+    
+    if (typeof window.Playroom !== 'undefined') {
+      window.Playroom.broadcastEvent('show-event', { title: title, message: message });
+    }
+    
+    status.textContent='Diffusé à toutes les équipes ✓';
+    document.getElementById('event-message-input').value='';
+    setTimeout(function(){ status.textContent=''; },3000);
+  }
+
+  function handleAdminResetClick(){
+    if (typeof window.Playroom !== 'undefined') {
+      window.Playroom.broadcastEvent('game-reset', {});
+    }
+    gameStarted = false;
+    document.getElementById('admin-start-btn').textContent = '🚀 Lancer le top départ';
+    document.getElementById('admin-start-btn').disabled = false;
+    document.getElementById('admin-start-status').textContent = 'Mission non démarrée';
+  }
+
+  /* ---------- initialization ---------- */
+  window.addEventListener('DOMContentLoaded', function(){
+    buildStarfield();
+    buildIconGrid();
+    document.getElementById('map-image').src = MAP_DATA_URI;
+    
+    document.getElementById('join-btn').addEventListener('click', joinMission);
+    document.getElementById('team-name-input').addEventListener('input', updateJoinButtonState);
+    document.getElementById('replay-btn').addEventListener('click', returnToJoin);
+    
+    document.getElementById('view-leaderboard-btn').addEventListener('click', function(){
+      updateLeaderboard();
+      showScreen('screen-leaderboard');
+    });
+    
+    document.getElementById('back-to-game-btn').addEventListener('click', function(){
+      showScreen('screen-game');
+    });
+    document.getElementById('event-close-btn').addEventListener('click', function(){
+      document.getElementById('event-overlay').classList.add('hidden');
+    });
+    
+    document.getElementById('admin-start-btn').addEventListener('click', handleAdminStart);
+    document.getElementById('admin-event-btn').addEventListener('click', handleAdminEvent);
+    document.getElementById('admin-reset-btn').addEventListener('click', handleAdminResetClick);
+    
+    initPlayroom();
+  });
+})();
+</script>
+</body>
+</html>
