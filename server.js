@@ -27,7 +27,15 @@ let connections = new Map();
 app.get('/api/game-state', (req, res) => {
   res.json({
     global: gameState,
-    teams: Array.from(teams.values()),
+    teams: Array.from(teams.values()).map(t => ({
+      slug: t.slug,
+      name: t.name,
+      icon: t.icon,
+      color: t.color,
+      pathIndex: t.pathIndex,
+      completed: t.completed,
+      online: t.online,
+    })),
   });
 });
 
@@ -57,8 +65,8 @@ app.post('/api/team-join', express.json(), (req, res) => {
     team.lastHeartbeat = Date.now();
   }
 
-  broadcast({ type: 'team-joined', team });
-  res.json(team);
+  broadcast({ type: 'team-joined', team: sanitizeTeam(team) });
+  res.json(sanitizeTeam(team));
 });
 
 app.post('/api/team-update', express.json(), (req, res) => {
@@ -74,8 +82,8 @@ app.post('/api/team-update', express.json(), (req, res) => {
   team.inventory = inventory;
   team.lastHeartbeat = Date.now();
 
-  broadcast({ type: 'team-updated', team });
-  res.json(team);
+  broadcast({ type: 'team-updated', team: sanitizeTeam(team) });
+  res.json(sanitizeTeam(team));
 });
 
 app.post('/api/admin/start', express.json(), (req, res) => {
@@ -120,6 +128,20 @@ app.post('/api/admin/reset', (req, res) => {
   res.json({ success: true });
 });
 
+function sanitizeTeam(team) {
+  return {
+    slug: team.slug,
+    name: team.name,
+    icon: team.icon,
+    color: team.color,
+    pathIndex: team.pathIndex,
+    completed: team.completed,
+    inventory: team.inventory,
+    online: team.online,
+    joinedAt: team.joinedAt,
+  };
+}
+
 // WebSocket connections
 wss.on('connection', (ws) => {
   const connId = Date.now() + Math.random();
@@ -143,8 +165,8 @@ wss.on('connection', (ws) => {
           team.online = (connections.get(currentTeam) || []).length;
         }
         
-        broadcast({ type: 'team-online-update', team });
-        ws.send(JSON.stringify({ type: 'join-success', team }));
+        broadcast({ type: 'team-online-update', team: sanitizeTeam(team) });
+        ws.send(JSON.stringify({ type: 'join-success', team: sanitizeTeam(team) }));
       } 
       else if (msg.type === 'team-progress') {
         const team = teams.get(currentTeam);
@@ -154,7 +176,7 @@ wss.on('connection', (ws) => {
           team.inventory = msg.inventory;
           team.lastHeartbeat = Date.now();
         }
-        broadcast({ type: 'team-updated', team });
+        broadcast({ type: 'team-updated', team: sanitizeTeam(team) });
       }
       else if (msg.type === 'heartbeat') {
         const team = teams.get(currentTeam);
@@ -182,7 +204,7 @@ wss.on('connection', (ws) => {
         connections.delete(currentTeam);
       }
       
-      broadcast({ type: 'team-online-update', team });
+      broadcast({ type: 'team-online-update', team: sanitizeTeam(team) });
     }
     console.log(`Client disconnected: ${connId}`);
   });
